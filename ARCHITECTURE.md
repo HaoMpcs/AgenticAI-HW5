@@ -22,11 +22,11 @@ The table below is RepoMind as Assignment 4 left it.
 | Layer | What does this job | Where it is enforced | Status |
 |---|---|---|---|
 | Model | The configured model, called only through the metered client | `harness/client.py:150` | present |
-| Harness | The loop, with three bounds checked in code; a plan validated before it runs, and an executor that runs only the plan's steps | `agent/loop.py:38`, `ways/planned.py:284`, `ways/planned.py:375` | present |
+| Harness | The loop checks bounds, validates a plan, and executes only planned steps | `agent/loop.py:38`, `ways/planned.py:311`, `ways/planned.py:397` | present |
 | Tools | Ten namespaced tools behind one registry: every call checked at the boundary before it runs; every write keyed by the harness, checked before each attempt and read back after a timeout; every attempt in the call record | `tools/__init__.py:167`, `tools/__init__.py:257`, `tools/__init__.py:266`, `tools/__init__.py:283`, `tools/__init__.py:322` | present |
 | Memory & State | A checkpoint after each file read and before each write, sync, and a resume from the last one; a store of dated records with their origin, read before the first search and written once at the end of a run | `ways/planned.py:338`, `ways/planned.py:351`, `ways/planned.py:220`, `ways/planned.py:240`, `state/checkpointer.py:55`, `state/store.py:96` | present |
-| Control & Policy | A hook runs before every call and denies when it fails; a write that cannot be confirmed goes to a person; the second pass holds a draft that still fails | `tools/__init__.py:233`, `ways/planned.py:611` | partial: the hook allows every call, and nothing decides which writes need a person |
-| Observability | One trace line per model call and per tool call, and the plan as data before it runs | `agent/loop.py:50`, `ways/planned.py:178` | partial: traces, no alerts |
+| Control & Policy | The hook classifies each call from harness facts, enforces boundaries and disclosure, prohibits unsafe classes, and asks before gated classes | `policy/hook.py:19`, `policy/hook.py:69`, `tools/__init__.py:153` | present |
+| Observability | Traces and call records show every step; live notifications make writable runs visible | `agent/loop.py:50`, `ways/planned.py:723`, `harness/notify.py:26` | present |
 | Evaluation | The grounded check reads the tracker, never the agent | `eval/check_triage.py:7` | partial: offline only |
 
-**Empty layers: 0 of 7**, and four are partial.
+**Empty layers: 0 of 7**. Evaluation remains partial because it is offline only.

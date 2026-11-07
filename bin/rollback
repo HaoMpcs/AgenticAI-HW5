@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from harness.tracker import Tracker
+
+if len(sys.argv) != 2:
+    raise SystemExit("usage: bin/rollback <run_id>")
+run_id = sys.argv[1]
+t = Tracker(ROOT)
+for write in reversed([x for x in t.log(run_id) if x["outcome"] in ("written", "timeout_after_commit")]):
+    action, target = write["action"], write["target"]
+    if action == "apply_label":
+        row = next((x for x in reversed(t.labels(run_id, active=False)) if x["label"] == target), None)
+        if row and row.get("removed_at") is None:
+            t.remove_label(run_id, row["id"]); print(f"apply_label {target}: remove_label"); continue
+    elif action == "open_pr":
+        number = int(str(target).removeprefix("pr-"))
+        row = t.pr(run_id, number)
+        if row and row["state"] == "open":
+            t.close_pr(run_id, number); print(f"open_pr {target}: close_pr"); continue
+    elif action == "close_issue":
+        row = next((x for x in reversed(t.closes(run_id, active=False)) if f"issue-{x['issue']}" == target), None)
+        if row and row.get("reopened_at") is None:
+            t.reopen_issue(run_id, row["id"]); print(f"close_issue {target}: reopen_issue"); continue
+    print(f"{action} {target}: none")

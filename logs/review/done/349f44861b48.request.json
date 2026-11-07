@@ -1,0 +1,25 @@
+{
+ "run_id": "planned-4328-s01-7d942a",
+ "action": "open_pr",
+ "action_class": "open_pr",
+ "args": {
+  "body": "File: src/index.ts\n\nClose idle HTTP connections on shutdown using httpServer.closeAllConnections() before waiting for active requests to finish, preventing keep-alive connections from blocking clean exits.",
+  "issue": "issue-4328",
+  "title": "Close idle keep-alive connections during server shutdown",
+  "branch": "repomind/issue-4328"
+ },
+ "facts": {
+  "issue": 4328,
+  "issue_opened_by_agent": true,
+  "minutes_since_human_comment": null,
+  "label": null,
+  "branch": "repomind/issue-4328",
+  "branch_protected": false,
+  "base": "develop",
+  "target_created_by_agent": true,
+  "paths": []
+ },
+ "kind": "approval",
+ "request_id": "349f44861b48",
+ "asked_at": "2026-11-07T03:13:00.008Z"
+}

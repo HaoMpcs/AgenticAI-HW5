@@ -1,0 +1,25 @@
+{
+ "run_id": "planned-4324-s01-1c80ae",
+ "action": "open_pr",
+ "action_class": "open_pr",
+ "args": {
+  "title": "Fix file downloads in Safari by appending the temp link to the body",
+  "branch": "repomind/issue-4324",
+  "issue": "issue-4324",
+  "body": "File: src/components/ExportButton.tsx\n\nSafari requires temporary download elements to be attached to the document body before clicking them. Append the anchor element to `document.body` before `link.click()` and remove it afterwards."
+ },
+ "facts": {
+  "issue": 4324,
+  "issue_opened_by_agent": false,
+  "minutes_since_human_comment": null,
+  "label": null,
+  "branch": "repomind/issue-4324",
+  "branch_protected": false,
+  "base": "develop",
+  "target_created_by_agent": true,
+  "paths": []
+ },
+ "kind": "approval",
+ "request_id": "61d7a70697c4",
+ "asked_at": "2026-11-07T03:12:02.562Z"
+}

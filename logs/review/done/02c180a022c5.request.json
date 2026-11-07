@@ -1,0 +1,25 @@
+{
+ "run_id": "planned-4326-s01-29bf89",
+ "action": "open_pr",
+ "action_class": "open_pr",
+ "args": {
+  "issue": "issue-4326",
+  "branch": "repomind/issue-4326",
+  "title": "Fix issue 4326",
+  "body": "File: src/util/money.ts\n\nFix the issue."
+ },
+ "facts": {
+  "issue": 4326,
+  "issue_opened_by_agent": true,
+  "minutes_since_human_comment": null,
+  "label": null,
+  "branch": "repomind/issue-4326",
+  "branch_protected": false,
+  "base": "develop",
+  "target_created_by_agent": true,
+  "paths": []
+ },
+ "kind": "approval",
+ "request_id": "02c180a022c5",
+ "asked_at": "2026-11-07T03:12:40.550Z"
+}

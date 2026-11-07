@@ -1,0 +1,25 @@
+{
+ "run_id": "planned-4323-s01-81bb59",
+ "action": "open_pr",
+ "action_class": "open_pr",
+ "args": {
+  "branch": "repomind/issue-4323",
+  "body": "File: src/notifications/rollup.ts\n\nWrap user time zone checks in try/catch or validate the time zone so that an invalid time zone like 'Central Standard Time' logged by a single user does not crash the rollup loop and skip all subsequent users.",
+  "issue": "issue-4323",
+  "title": "Prevent invalid time zones from halting the weekly rollup loop"
+ },
+ "facts": {
+  "issue": 4323,
+  "issue_opened_by_agent": true,
+  "minutes_since_human_comment": null,
+  "label": null,
+  "branch": "repomind/issue-4323",
+  "branch_protected": false,
+  "base": "develop",
+  "target_created_by_agent": true,
+  "paths": []
+ },
+ "kind": "approval",
+ "request_id": "4f29b3e2e0b1",
+ "asked_at": "2026-11-07T03:11:46.672Z"
+}

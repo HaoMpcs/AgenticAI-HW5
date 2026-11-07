@@ -1,0 +1,25 @@
+{
+ "run_id": "planned-4301-s01-14cc2a",
+ "action": "open_pr",
+ "action_class": "open_pr",
+ "args": {
+  "title": "Advance scheduled export run timestamp on failure to prevent retry loops",
+  "issue": "issue-4301",
+  "body": "File: src/export/scheduler.ts\n\nUpdate `runDueExports` so that scheduled exports update their next run timestamp even when sending fails, preventing infinite retry loops for failing large reports.",
+  "branch": "repomind/issue-4301"
+ },
+ "facts": {
+  "issue": 4301,
+  "issue_opened_by_agent": true,
+  "minutes_since_human_comment": null,
+  "label": null,
+  "branch": "repomind/issue-4301",
+  "branch_protected": false,
+  "base": "develop",
+  "target_created_by_agent": true,
+  "paths": []
+ },
+ "kind": "approval",
+ "request_id": "18dfd0dfe1d8",
+ "asked_at": "2026-11-07T03:01:49.864Z"
+}

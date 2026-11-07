@@ -1,0 +1,25 @@
+{
+ "run_id": "planned-4316-s01-073728",
+ "action": "open_pr",
+ "action_class": "open_pr",
+ "args": {
+  "issue": "issue-4316",
+  "body": "src/services/smtp.ts\n\nCheck the SMTP response code before retrying a failed delivery; if it starts with 5 (permanent failure), fail immediately without retrying, while preserving retries for temporary 4xx errors.",
+  "title": "Do not retry permanent 5xx SMTP rejections",
+  "branch": "repomind/issue-4316"
+ },
+ "facts": {
+  "issue": 4316,
+  "issue_opened_by_agent": true,
+  "minutes_since_human_comment": null,
+  "label": null,
+  "branch": "repomind/issue-4316",
+  "branch_protected": false,
+  "base": "develop",
+  "target_created_by_agent": true,
+  "paths": []
+ },
+ "kind": "approval",
+ "request_id": "220026a6eedc",
+ "asked_at": "2026-11-07T03:10:05.717Z"
+}

@@ -1,0 +1,27 @@
+independent:
+  - read_issue
+  - search_repo
+  - read_file
+  - run_tests
+  - apply_label
+  - close_issue
+  - post_comment/agent_opened
+  - post_comment/human_quiet
+requires_approval:
+  - post_comment/human_active
+  - open_pr
+  - push_commit/unprotected
+prohibited:
+  - push_commit/protected
+  - merge_pr
+classes:
+  post_comment/agent_opened: RepoMind opened the issue
+  post_comment/human_active: a person commented in the last 60 minutes
+  post_comment/human_quiet: a person opened it and nobody commented in the last 60 minutes
+  push_commit/protected: the destination branch is protected
+  push_commit/unprotected: the destination branch is not protected
+escalate:
+  - before a push when this run's tests failed
+  - before an irreversible action on a stored-memory contradiction
+  - before an irreversible action after an uninterpretable result
+  - after the same step is blocked three times

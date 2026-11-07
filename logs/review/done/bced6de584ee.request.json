@@ -1,0 +1,25 @@
+{
+ "run_id": "planned-4302-s01-39f4e2",
+ "action": "open_pr",
+ "action_class": "open_pr",
+ "args": {
+  "branch": "repomind/issue-4302",
+  "issue": "issue-4302",
+  "title": "Support decimal commas and period thousands separators in parseAmount",
+  "body": "File: src/util/money.ts\n\nUpdate parseAmount to correctly handle European-style number formatting where the period is used as a thousands separator and the comma as a decimal separator (e.g. \"1.234,56\" or \"-12,50\"), rather than unconditionally stripping commas and assuming period decimal points."
+ },
+ "facts": {
+  "issue": 4302,
+  "issue_opened_by_agent": false,
+  "minutes_since_human_comment": 20.1,
+  "label": null,
+  "branch": "repomind/issue-4302",
+  "branch_protected": false,
+  "base": "develop",
+  "target_created_by_agent": true,
+  "paths": []
+ },
+ "kind": "approval",
+ "request_id": "bced6de584ee",
+ "asked_at": "2026-11-07T03:05:25.852Z"
+}

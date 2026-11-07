@@ -1,5 +1,11 @@
 # CHANGES.md
 
+## Assignment 5
+
+- **Added:** a three-column policy, consequence hook, approval screen, durable boundaries, escalation, live stop, rollback, and enforced AI disclosure
+- **Removed:** autonomous merge
+- **Constrained:** protected pushes are prohibited; active-thread comments and other wide irreversible writes require approval
+
 Three lines per assignment: what it added, what it removed, what it constrained.
 Removals are logged like additions.
 

@@ -141,7 +141,8 @@ def load_definition(module: str) -> dict:
 class ToolRegistry:
     def __init__(self, ctx: RunContext, modules=MODULES):
         self.ctx = ctx
-        self.hooks: list = [allow_all]
+        from policy.hook import make_hook
+        self.hooks: list = [allow_all, make_hook(ctx)]
         self.protocol_errors = 0
         self._tools: dict[str, tuple[str, dict, object]] = {}
         for module in modules:
@@ -231,9 +232,12 @@ class ToolRegistry:
 
     # -- 3. hooks ----------------------------------------------------------------------------
     def _denied(self, name: str, args: dict) -> str | None:
+        from policy.stop import StopRequested
         for hook in self.hooks:
             try:
                 verdict = hook(name, args)
+            except StopRequested:
+                raise
             except Exception as exc:  # fail closed
                 return f"the hook {getattr(hook, '__name__', 'hook')} failed ({type(exc).__name__}), so the call is denied"
             if verdict is not None and verdict is not True:

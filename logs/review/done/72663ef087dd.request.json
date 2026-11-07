@@ -1,0 +1,25 @@
+{
+ "run_id": "planned-4313-s01-8555e9",
+ "action": "open_pr",
+ "action_class": "open_pr",
+ "args": {
+  "body": "File: src/ingest/queue.ts\n\nEnsure that import jobs stuck in the 'running' status (for example, due to a worker restart or crash while processing an upload) are able to be recovered or timed out, preventing them from hanging indefinitely and skewing queue depth metrics.",
+  "issue": "issue-4313",
+  "title": "Handle stuck running import jobs after worker restarts",
+  "branch": "repomind/issue-4313"
+ },
+ "facts": {
+  "issue": 4313,
+  "issue_opened_by_agent": true,
+  "minutes_since_human_comment": null,
+  "label": null,
+  "branch": "repomind/issue-4313",
+  "branch_protected": false,
+  "base": "develop",
+  "target_created_by_agent": true,
+  "paths": []
+ },
+ "kind": "approval",
+ "request_id": "72663ef087dd",
+ "asked_at": "2026-11-07T03:08:43.683Z"
+}

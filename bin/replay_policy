@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from collections import Counter
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from policy.hook import place
+
+COVERS = ["open_pr", "post_comment/human_active"]
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("file")
+    parser.add_argument("--batched", action="store_true")
+    parser.add_argument("--json", action="store_true")
+    args = parser.parse_args()
+    counts = {c: Counter() for c in ("independent", "requires_approval", "prohibited")}
+    covered_runs, uncovered = set(), 0
+    for raw in Path(args.file).read_text().splitlines():
+        row = json.loads(raw)
+        cls, column = place(row["action"], row["facts"], ROOT)
+        counts[column][cls] += 1
+        if column == "requires_approval":
+            if cls in COVERS:
+                covered_runs.add(row["run_id"])
+            else:
+                uncovered += 1
+    prompts = uncovered + len(covered_runs) if args.batched else sum(counts["requires_approval"].values())
+    out = {c: dict(sorted(v.items())) for c, v in counts.items()}
+    out.update(prompts_per_day=prompts, seconds_per_prompt=round(600 / prompts, 3) if prompts else None)
+    if args.batched:
+        out["covers"] = COVERS
+    if args.json:
+        print(json.dumps(out, sort_keys=True))
+    else:
+        for column, values in counts.items():
+            for cls, count in sorted(values.items()):
+                print(f"{column}\t{cls}\t{count}")
+        print(f"prompts_per_day\t{prompts}")
+
+
+if __name__ == "__main__":
+    main()

@@ -104,6 +104,8 @@ import copy
 import json
 import os
 import re
+import time
+from pathlib import Path
 from datetime import datetime, timezone
 
 from agent.critique import self_critique, verify
@@ -116,6 +118,12 @@ from harness.schema import errors as schema_errors
 from state.checkpointer import Checkpointer
 from state.store import REPOSITORY, Store
 from tools import Unverifiable
+from policy.hook import DISCLOSURE
+from policy.inbox import InboxClient
+from policy.stop import StopRequested, active as stop_active, append as stop_event
+from harness.notify import notify
+from harness.clock import now
+from harness.reviewer import Reviewer
 
 MAX_REPLANS = 2       # three planner calls in all; a fourth on the same request is the same coin, so a person looks
 MAX_REVISIONS = 2     # a repair of the first search, and one more if the repair also finds nothing
@@ -162,11 +170,21 @@ class Recording:
 
 
 def run(ctx) -> None:
+    if not isinstance(ctx.client, InboxClient):
+        ctx.client = InboxClient(ctx.client, ctx)
+    checkpointer = Checkpointer()
+    last = checkpointer.last(ctx.run_id)
+    if last is not None and stop_active(ctx.root, ctx.run_id):
+        stop_event(ctx.root, ctx.run_id, "lifted")
+    notify("live", ctx.run_id,
+           f"RepoMind is running on issue {ctx.issue_number}; stop it with bin/stop {ctx.run_id}", root=ctx.root)
+    if last is None and os.environ.get("REPOMIND_STOP_WINDOW") == "1":
+        deadline = time.monotonic() + 60
+        while time.monotonic() < deadline and not stop_active(ctx.root, ctx.run_id):
+            time.sleep(0.1)
     conversation: list[dict] = []
     if os.environ.get(CONVERSATION) == "1":
         ctx.client = Recording(ctx.client, conversation)
-    checkpointer = Checkpointer()
-    last = checkpointer.last(ctx.run_id)
     memory = recall(ctx)
     if last is not None:                          # a resume: rebuild from the last checkpoint, never re-plan
         executor = Executor(ctx, last["plan"], checkpointer=checkpointer, memory=memory, restore=last)
@@ -413,13 +431,69 @@ class Executor:
     def call(self, step: dict, tool: str, args: dict):
         """One tool call for a plan step; None when the registry could not confirm a
         write, and the run has ended escalated (the third exit)."""
+        if role(tool) == "push_commit" and self.tests_failed():
+            self.save_state(step, current=step.get("id"))
+            packet = {"attempted": f"push commit to {args.get(arg('push_commit', 'branch'))}",
+                      "why_stopped": "this run's own test suite failed",
+                      "needs_from_human": "push anyway, or revise the change",
+                      "signal": "failed_verification", "at": now()}
+            path = self.ctx.root / "escalations" / f"{self.ctx.run_id}.json"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(packet, indent=2) + "\n")
+            self.ctx.trace.event("escalation", signal="failed_verification", packet=str(path.relative_to(self.ctx.root)))
+            approvals_path = self.ctx.root / "logs" / "approvals.jsonl"
+            today = now()[:10]
+            earlier = []
+            if approvals_path.exists():
+                earlier = [json.loads(line) for line in approvals_path.read_text().splitlines() if line.strip()]
+            if sum(1 for line in earlier if line.get("kind") == "escalation"
+                   and str(line.get("at", "")).startswith(today)) >= 3:
+                from policy.hook import _append
+                _append(self.ctx.root / "logs" / "escalation_caps.jsonl",
+                        {"at": now(), "run_id": self.ctx.run_id, "signal": "failed_verification", "cap": 3})
+                self.ctx.trace.end("held", detail="daily escalation cap reached; the run still holds")
+                return None
+            request = {"run_id": self.ctx.run_id, "action": "push_commit",
+                       "action_class": "push_commit/unprotected", "args": args,
+                       "facts": self.ctx.tracker.facts(self.ctx.run_id, "push_commit", args, self.ctx.issue_number),
+                       "kind": "escalation", "packet": packet}
+            reviewer = Reviewer.from_env(self.ctx.root)
+            answer = reviewer.ask(request, 300)
+            from policy.hook import _append
+            _append(self.ctx.root / "logs" / "approvals.jsonl", {"at": now(), **request,
+                    "decision": answer["decision"] if answer else "none",
+                    "seconds": answer.get("seconds") if answer else None,
+                    "reviewer": answer.get("reviewer", "scripted") if answer else "scripted", "mode": reviewer.mode})
+            if answer is None:
+                self.ctx.trace.end("held", detail="failed tests require a reviewer; no answer")
+                return None
+            if answer["decision"] != "approve":
+                self.ctx.trace.end("escalated", detail="reviewer declined push after failed tests")
+                return None
         try:
-            return self.ctx.call_tool(self.calls, tool, args, plan_step=step.get("id"))
+            result = self.ctx.call_tool(self.calls, tool, args, plan_step=step.get("id"))
+            if stop_active(self.ctx.root, self.ctx.run_id):
+                self.save_state(step, current=step.get("id"))
+                self.ctx.trace.end("stopped", detail=f"stop took effect before {role(tool)}")
+                return None
+            return result
+        except StopRequested as exc:
+            self.save_state(step, current=step.get("id"))
+            self.ctx.trace.end("stopped", detail=f"stop took effect before {exc}")
+            return None
         except Unverifiable as exc:
             self.record(step, args, None, "unverifiable")
             self.ctx.trace.end("escalated", detail=f"step {step.get('id')}: {exc}; a person on review duty decides")
             return None
 
+    def tests_failed(self) -> bool:
+        for call in reversed(self.completed):
+            if role(call.get("tool")) == "run_tests":
+                try:
+                    return json.loads(call.get("result") or "{}").get("passed") is False
+                except json.JSONDecodeError:
+                    return True
+        return False
     def filled(self, step: dict, args: dict) -> dict | None:
         to_fill = [k for k, v in args.items() if str(v).startswith(FILL)]   # "$fill", or "$fill: a note"
         if not to_fill:
@@ -550,6 +624,8 @@ class Executor:
             error = "not_found" if "no such file" in text else "tool_error"
         if error is None and role(tool) == "search" and not count:
             error = "no_matches"
+            self.ctx.trace.event("not_determined", step=step.get("id"),
+                                 question="which source file answers this search")
         status = "skipped" if error == "skipped" else "failed" if error else "done"
         entry = {"id": step.get("id"), "tool": tool, "status": status, "count": count,
                  "paths": paths, "error_code": error, "args": args}
@@ -611,6 +687,9 @@ class Executor:
             self.ctx.trace.end("escalated", detail=f"the draft still failed the second pass after {MAX_ROUNDS} rounds")
             return False
         self.draft = final
+        body = arg("comment", "body")
+        if DISCLOSURE not in str(self.draft.get(body, "")):
+            self.draft[body] = str(self.draft.get(body, "")).rstrip() + "\n" + DISCLOSURE
         self.drafted_file = parse_triage_comment(str(final.get(arg("comment", "body"))))[1] or "none"
         return True
 
